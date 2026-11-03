@@ -1,29 +1,103 @@
-# Royal Mobile And Printing Store
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Owner Panel — Royal Store</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="wrap nav-wrap">
+        <a class="brand" href="/"><span class="brand-mark">R</span><span>ROYAL MOBILE<small>AND PRINTING STORE</small></span></a>
+        <nav class="main-nav">
+          <a href="/">Storefront</a>
+          <a href="#products">Catalog</a>
+          <a href="#requests">Custom requests</a>
+          <a href="#settings">Settings</a>
+        </nav>
+      </div>
+    </header>
 
-A responsive storefront and an initial Node.js/Express + SQLite application foundation. Public pages use the same persistent product, category, store-settings, and theme data served by the API. This is an incremental foundation—not the complete business platform in `Royal_Mobile_Printing_Store_GitHub_Master_Prompt-1.md`.
+    <main class="wrap owner-shell">
+      <section class="owner-summary">
+        <div class="stat-card">
+          <span>Products</span>
+          <strong id="admin-product-count">0</strong>
+        </div>
+        <div class="stat-card">
+          <span>Custom requests</span>
+          <strong id="admin-request-count">0</strong>
+        </div>
+        <div class="stat-card">
+          <span>Active theme</span>
+          <strong id="admin-theme-name">Royal Gold</strong>
+        </div>
+      </section>
 
-## Run locally
+      <section class="panel-grid" id="settings">
+        <div class="panel card">
+          <h3>Store settings</h3>
+          <form id="settings-form" class="stack-form">
+            <label>Store name<input name="storeName" /></label>
+            <label>Tagline<input name="storeTagline" /></label>
+            <label>Phone<input name="phone" /></label>
+            <label>WhatsApp<input name="whatsapp" /></label>
+            <label>Email<input name="email" type="email" /></label>
+            <label>Address<textarea name="address" rows="2"></textarea></label>
+            <label>Business hours<input name="businessHours" /></label>
+            <label>Currency<input name="currency" /></label>
+            <label>Tax rate<input name="taxRate" type="number" step="0.01" /></label>
+            <button class="btn gold" type="submit">Save settings</button>
+          </form>
+        </div>
 
-Requires Node.js 18 or later and npm. The API server creates `data/royal_store.db` and seeds categories, 20 theme palettes, and 120 editable sample products on first start.
+        <div class="panel card">
+          <h3>Choose storefront theme</h3>
+          <label>Theme<select id="theme-select"></select></label>
+          <p class="muted">20 theme palettes are available; this changes storefront colors.</p>
+        </div>
+      </section>
 
-```sh
-npm install
-npm start
-```
+      <section id="products" class="card panel">
+        <div class="section-heading">
+          <p class="eyebrow">Catalog management</p>
+          <h2>Products</h2>
+        </div>
 
-Open http://localhost:3000 and `/owner.html`. `DATA_DIR` can point at a persistent writable directory; `PORT` sets the HTTP port. Protect the owner panel behind a trusted private network/reverse proxy until authentication and server-side authorization are implemented. The current owner endpoints are not authenticated and must not be exposed as a production admin service.
+        <form id="product-form" class="stack-form product-form">
+          <input type="hidden" name="id" />
+          <label>Name<input name="name" required maxlength="200" /></label>
+          <label>Category<input name="category" required /></label>
+          <label>SKU<input name="sku" /></label>
+          <label>Price<input name="price" type="number" min="0" step="0.01" required /></label>
+          <label>Wholesale price<input name="wholesalePrice" type="number" min="0" step="0.01" /></label>
+          <label>Cost<input name="cost" type="number" min="0" step="0.01" /></label>
+          <label>Stock<input name="stock" type="number" min="0" step="1" required /></label>
+          <label>Image URL<input name="image" type="url" /></label>
+          <label>Tags<input name="tags" placeholder="phone,case,custom" /></label>
+          <label>Description<textarea name="description" rows="3"></textarea></label>
+          <button class="btn gold" type="submit">Add product</button>
+        </form>
 
-## Current implemented foundation
+        <div id="admin-products" class="admin-product-list"></div>
+      </section>
 
-- SQLite persistence for product catalog, categories, store settings, themes, custom request text fields, and basic orders.
-- Product listing and owner CRUD API, store settings API, theme activation, basic custom request submission, and stock-aware order creation.
-- Storefront and owner panel wired to the API; 120 clearly sample/demo products (not sales), 20 theme palettes.
-- Automated API tests: `npm test`.
+      <section id="requests" class="card panel">
+        <div class="section-heading row-head">
+          <div>
+            <p class="eyebrow">Customer workflow</p>
+            <h2>Custom requests</h2>
+          </div>
+          <button id="export-requests" class="btn secondary" type="button">Export JSON</button>
+        </div>
+        <div id="admin-requests" class="admin-request-list"></div>
+      </section>
 
-## Important gaps and limitations
+      <p class="muted"><strong>Security notice:</strong> Owner API routes currently have no authentication. Do not expose this panel publicly until access controls are implemented.</p>
+    </main>
 
-This version does **not** implement authentication, role permissions, private secure customer file storage, payment verification, customer accounts, full POS, finance, suppliers, returns, social posting, AI integrations, actual 3D product design/export, scheduling/automation, encrypted independent backups/recovery, or release rollback. Custom request image uploads are not accepted yet. Gateway, AI, and social provider configuration and credentials are also absent. Do not treat demo products or basic orders as real paid transactions. GitHub Pages serves static files only and cannot run this Node server; production requires a Node-capable host, persistent database/storage, HTTPS, secrets/configuration, and security review. No production readiness or deployment verification is claimed.
+    <script src="/owner.js"></script>
+  </body>
+</html>
 
-## Deploy
-
-Configure a Node host to run `npm start`, mount persistent storage and set `DATA_DIR`, and enable HTTPS at the host/reverse proxy. The static GitHub Pages deployment cannot provide the API or shared SQLite persistence.

@@ -1,43 +1,38 @@
-const { test, before, after } = require('node:test');
-const assert = require('node:assert/strict');
-const request = require('supertest');
-const { app } = require('../server');
-const { seedDefaults, db } = require('../db');
+# Royal Mobile And Printing Store
 
-before(async () => seedDefaults());
-after(() => new Promise((resolve, reject) => db.close(error => error ? reject(error) : resolve())));
+A responsive storefront and a working Node.js + Express + SQLite foundation for the Royal Mobile And Printing Store. The app now serves a storefront and owner dashboard from the same persisted database, with seeded categories, 20 theme palettes, sample products, basic requests, and order creation checks.
 
-test('health check confirms database connection', async () => {
-  const response = await request(app).get('/api/health').expect(200);
-  assert.equal(response.body.status, 'ok');
-});
+## Run locally
 
-test('storefront seeds at least 100 products and 20 themes', async () => {
-  const response = await request(app).get('/api/storefront').expect(200);
-  assert.ok(response.body.products.length >= 100);
-  assert.equal(response.body.themes.length, 20);
-  assert.ok(response.body.categories.length >= 5);
-});
+```sh
+npm install
+npm start
+```
 
-test('product create and update are persisted', async () => {
-  const sku = `TEST-${Date.now()}`;
-  const created = await request(app).post('/api/products').send({name:'Test item',category:'Printing',sku,price:250,stock:5}).expect(201);
-  await request(app).put(`/api/products/${created.body.id}`).send({name:'Updated test item',price:300,stock:4}).expect(200);
-  const products = await request(app).get('/api/products').expect(200);
-  assert.ok(products.body.some(product => product.sku === sku && product.name === 'Updated test item' && product.price === 300));
-  await request(app).delete(`/api/products/${created.body.id}`).expect(200);
-});
+Then open:
+- http://localhost:3000/
+- http://localhost:3000/owner.html
 
-test('custom request validates required fields and accepts a valid request', async () => {
-  await request(app).post('/api/requests').send({}).expect(400);
-  const response = await request(app).post('/api/requests').send({customerName:'Test customer',phone:'03000000000',productName:'Custom mug',description:'Blue mug with logo',quantity:2}).expect(201);
-  assert.equal(response.body.status, 'Submitted');
-  assert.equal(response.body.quantity, 2);
-});
+The app creates `data/royal_store.db` automatically on first launch.
 
-test('theme activation is persisted and reflected on storefront', async () => {
-  await request(app).post('/api/themes/2/activate').expect(200);
-  const response = await request(app).get('/api/storefront').expect(200);
-  assert.equal(String(response.body.settings.themeId), '2');
-  assert.equal(response.body.themes.find(theme => Number(theme.active) === 1).id, 2);
-});
+## Included features
+
+- Storefront catalog from SQLite
+- Category filters and search
+- Store settings API and theme activation
+- Product CRUD in the Owner Panel
+- Custom request submission endpoint
+- Stock-safe order creation
+- 20 theme choices and 100+ demo products
+- Automated API tests via Node's built-in test runner
+
+## Important limitations
+
+This is not the complete end-to-end business suite from the project specification. The current version does not include authentication, role permissions, secure private file uploads, payment verification, shipping/returns, AI provider integration, or production deployment security. GitHub Pages alone cannot run this server-side code. A Node-capable host with HTTPS and persistent storage is still required for production deployment.
+
+## Test
+
+```sh
+npm test
+```
+

@@ -1,11 +1,177 @@
-const $=id=>document.getElementById(id);const state={products:[],requests:[],settings:{},themes:[]};
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function api(url,options={}){const r=await fetch(url,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Request failed.');return d;}
-function render(){if($('admin-product-count'))$('admin-product-count').textContent=state.products.length;if($('admin-request-count'))$('admin-request-count').textContent=state.requests.length;const active=state.themes.find(t=>Number(t.active)===1);if($('admin-theme-name'))$('admin-theme-name').textContent=active?.name||'Royal Gold';const list=$('admin-products');if(list)list.innerHTML=state.products.map(p=>`<div class="admin-row"><div><strong>${esc(p.name)}</strong><small>${esc(p.category)} · SKU ${esc(p.sku)} · stock ${p.stock}</small></div><div class="row-actions"><button class="btn small" data-edit="${p.id}">Edit</button><button class="btn small danger" data-delete="${p.id}">Delete</button></div></div>`).join('');const requests=$('admin-requests');if(requests)requests.innerHTML=state.requests.map(r=>`<article class="request-card"><strong>${esc(r.customer_name)}</strong><span class="badge">${esc(r.status)}</span><p>${esc(r.product_name)} — ${esc(r.description)}</p><small>${esc(r.phone)} · Qty ${r.quantity}</small></article>`).join('')||'<p class="muted">No requests yet.</p>';const form=$('settings-form');if(form)for(const [k,v] of Object.entries(state.settings)){const input=form.elements.namedItem(k);if(input)input.value=v;}const select=$('theme-select');if(select){select.innerHTML=state.themes.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');if(active)select.value=active.id;}}
-async function load(){try{[state.products,state.requests,state.settings,state.themes]=await Promise.all([api('/api/products'),api('/api/requests'),api('/api/owner/settings'),api('/api/themes')]);render();}catch(e){alert(`Owner API unavailable: ${e.message}`);}}
-$('settings-form')?.addEventListener('submit',async e=>{e.preventDefault();try{state.settings=await api('/api/owner/settings',{method:'PUT',body:JSON.stringify(Object.fromEntries(new FormData(e.currentTarget)))});alert('Settings saved.');}catch(error){alert(error.message);}});
-$('theme-select')?.addEventListener('change',async e=>{try{await api(`/api/themes/${e.target.value}/activate`,{method:'POST'});state.themes=await api('/api/themes');render();}catch(error){alert(error.message);}});
-$('product-form')?.addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget,raw=Object.fromEntries(new FormData(form));const id=raw.id;const payload={...raw,price:Number(raw.price),wholesalePrice:Number(raw.wholesalePrice||0),cost:Number(raw.cost||0),stock:Number(raw.stock),tags:raw.tags.split(',').map(s=>s.trim()).filter(Boolean)};try{await api(id?`/api/products/${id}`:'/api/products',{method:id?'PUT':'POST',body:JSON.stringify(payload)});form.reset();form.elements.id.value='';form.querySelector('button[type=submit]').textContent='Add product';await load();}catch(error){alert(error.message);}});
-$('admin-products')?.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;const p=state.products.find(x=>x.id===Number(b.dataset.edit||b.dataset.delete));if(!p)return;if(b.dataset.delete){if(!confirm(`Delete ${p.name}?`))return;try{await api(`/api/products/${p.id}`,{method:'DELETE'});await load();}catch(error){alert(error.message);}}else{const f=$('product-form');for(const [field,value] of Object.entries({id:p.id,name:p.name,category:p.category,sku:p.sku,price:p.price,wholesalePrice:p.wholesale_price,cost:p.cost,stock:p.stock,image:p.image,tags:(p.tags||[]).join(','),description:p.description}))f.elements[field].value=value??'';f.querySelector('button[type=submit]').textContent='Update product';f.scrollIntoView({behavior:'smooth'});}});
-$('export-requests')?.addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(state.requests,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='custom-requests.json';a.click();URL.revokeObjectURL(url);});
-window.addEventListener('DOMContentLoaded',load);
+const fmt = (value) => `Rs. ${Number(value || 0).toLocaleString('en-PK')}`;
+const $ = (id) => document.getElementById(id);
+const state = { products: [], cart: [], categories: [], settings: {} };
+
+async function api(url, options = {}) {
+  const response = await fetch(url, {
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    ...options
+  });
+
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error || 'Request failed.');
+  return body;
+}
+
+function safe(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[c]));
+}
+
+function toast(message) {
+  const el = $('toast');
+  if (!el) return;
+  el.textContent = message;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function applyTheme(theme) {
+  if (!theme) return;
+  document.documentElement.style.setProperty('--gold', theme.accent || '#f2c451');
+  document.documentElement.style.setProperty('--accent', theme.accent || '#f2c451');
+  document.documentElement.style.setProperty('--surface', theme.surface || '#141e32');
+  document.documentElement.style.setProperty('--text', theme.text || '#f7f8fc');
+}
+
+function renderCategories() {
+  const grid = $('category-grid');
+  const filter = $('category-filter');
+  if (grid) {
+    grid.innerHTML = state.categories.map((category) => `
+      <a class="category-card" href="#catalog">
+        <div class="icon">${safe(category.icon || '🛍️')}</div>
+        <h3>${safe(category.name)}</h3>
+        <p>${safe(category.description || '')}</p>
+      </a>
+    `).join('');
+  }
+
+  if (filter) {
+    filter.innerHTML = '<option value="All">All categories</option>' + state.categories.map((category) => `<option value="${safe(category.name)}">${safe(category.name)}</option>`).join('');
+  }
+}
+
+function renderProducts() {
+  const grid = $('product-grid');
+  if (!grid) return;
+
+  const query = ($('search')?.value || '').trim().toLowerCase();
+  const category = $('category-filter')?.value || 'All';
+
+  const filtered = state.products.filter((product) => {
+    const matchesCategory = category === 'All' || product.category === category;
+    const haystack = `${product.name || ''} ${product.description || ''} ${product.category || ''} ${(product.tags || []).join(' ')}`.toLowerCase();
+    const matchesSearch = !query || haystack.includes(query);
+    return product.visible !== false && matchesCategory && matchesSearch;
+  });
+
+  grid.innerHTML = filtered.map((product) => `
+    <article class="product-card">
+      <img src="${safe(product.image || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80')}" alt="${safe(product.name)}" loading="lazy" />
+      <div class="product-body">
+        <span class="product-category">${safe(product.category)}</span>
+        <h3>${safe(product.name)}</h3>
+        <p>${safe(product.description || '')}</p>
+        <div class="product-row">
+          <strong>${fmt(product.price)}</strong>
+          <button class="btn gold small" data-add="${product.id}" ${product.stock < 1 ? 'disabled' : ''}>${product.stock < 1 ? 'Out of stock' : 'Add to cart'}</button>
+        </div>
+      </div>
+    </article>
+  `).join('') || '<p class="muted">No matching products found.</p>';
+}
+
+function updateCart() {
+  const count = $('cart-count');
+  if (count) count.textContent = state.cart.reduce((total, item) => total + item.quantity, 0);
+}
+
+async function checkout() {
+  if (!state.cart.length) {
+    toast('Your cart is empty.');
+    return;
+  }
+
+  const name = prompt('Name for this order (optional):') || 'Guest';
+  const phone = prompt('Phone number (optional):') || '';
+
+  try {
+    const order = await api('/api/orders', {
+      method: 'POST',
+      body: JSON.stringify({ customerName: name, phone, items: state.cart.map((item) => ({ id: item.id, quantity: item.quantity })) })
+    });
+
+    state.cart = [];
+    updateCart();
+    toast(`Order ${order.id} submitted. Payment is not collected online.`);
+  } catch (error) {
+    toast(error.message || 'Could not create order.');
+  }
+}
+
+async function load() {
+  try {
+    const data = await api('/api/storefront');
+    state.settings = data.settings || {};
+    state.categories = data.categories || [];
+    state.products = data.products || [];
+    const activeTheme = (data.themes || []).find((theme) => Number(theme.active) === 1) || (data.themes || [])[0];
+    applyTheme(activeTheme);
+
+    if ($('store-name')) $('store-name').textContent = state.settings.storeName || 'Royal Mobile And Printing Store';
+    if ($('store-name-footer')) $('store-name-footer').textContent = state.settings.storeName || 'Royal Mobile And Printing Store';
+    if ($('store-tagline')) $('store-tagline').textContent = state.settings.storeTagline || 'Print • Create • Customize';
+    if ($('store-address')) $('store-address').textContent = `${state.settings.address || 'Faisalabad, Punjab, Pakistan'} · ${state.settings.phone || '03040011041'}`;
+    document.title = state.settings.storeName || 'Royal Mobile And Printing Store';
+
+    renderCategories();
+    renderProducts();
+  } catch (error) {
+    toast(`Store API unavailable: ${error.message}`);
+  }
+}
+
+$('product-grid')?.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-add]');
+  if (!button) return;
+
+  const product = state.products.find((item) => item.id === Number(button.dataset.add));
+  if (!product || product.stock < 1) return;
+
+  const existing = state.cart.find((item) => item.id === product.id);
+  if (existing) existing.quantity += 1;
+  else state.cart.push({ ...product, quantity: 1 });
+
+  updateCart();
+  toast(`${product.name} added to cart.`);
+});
+
+$('cart-button')?.addEventListener('click', checkout);
+$('search')?.addEventListener('input', renderProducts);
+$('category-filter')?.addEventListener('change', renderProducts);
+
+$('custom-form')?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = Object.fromEntries(new FormData(form).entries());
+
+  try {
+    await api('/api/requests', { method: 'POST', body: JSON.stringify(data) });
+    form.reset();
+    toast('Custom request submitted. The store will contact you.');
+  } catch (error) {
+    toast(error.message || 'Unable to submit request.');
+  }
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+  if ($('year')) $('year').textContent = new Date().getFullYear();
+  load();
+});
+
