@@ -1,0 +1,5 @@
+# Cloudflare Pages configuration for the Royal Marketplace storefront.
+# The Express/PostgreSQL API remains on its Node-capable backend for now.
+name = "royal-marketplace"
+pages_build_output_dir = "./public"
+compatibility_date = "2026-11-04"
