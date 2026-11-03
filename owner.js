@@ -1,8 +1,174 @@
-const KEY="royal-store-demo-v1";const starter=[{id:101,name:"Premium Mobile Case",category:"Mobile Accessories",price:850,emoji:"📱",description:"Protective case with a stylish finish."},{id:102,name:"Fast Charging Cable",category:"Mobile Accessories",price:650,emoji:"🔌",description:"A useful everyday charging accessory."},{id:103,name:"Custom Printed Mug",category:"Customized Gifts",price:1200,emoji:"☕",description:"A personal gift with your own design."},{id:104,name:"Business Cards",category:"Printing",price:900,emoji:"🪪",description:"Professional cards for your business."},{id:105,name:"Photo Print",category:"Printing",price:150,emoji:"🖼️",description:"Print your favorite memories."},{id:106,name:"Custom T-Shirt",category:"Customized Gifts",price:1800,emoji:"👕",description:"Wear your design or message."},{id:107,name:"Sticker / Label Sheet",category:"Printing",price:500,emoji:"🏷️",description:"Great for packaging and branding."},{id:108,name:"Gift Printing",category:"Customized Gifts",price:1000,emoji:"🎁",description:"Personalized print for special occasions."}];let data;try{data=JSON.parse(localStorage.getItem(KEY))||{products:starter,requests:[],theme:0}}catch{data={products:starter,requests:[],theme:0}}const $=id=>document.getElementById(id);const themes=[["Royal Gold","#0b1020","#f2c451"],["Ocean Blue","#081b2d","#58c5ef"],["Emerald","#071f1b","#62d6a6"],["Rose","#25121d","#ff8fb1"],["Purple Glow","#17102b","#c4a2ff"],["Sunset","#25150e","#ffad68"],["Clean Light","#f5f7fb","#b78316"],["Midnight Silver","#11151c","#cbd5e1"],["Ruby","#260e14","#ff7d8c"],["Teal","#0b2024","#6de1d0"],["Sapphire","#0b1530","#86a8ff"],["Copper","#20160f","#e6a36b"],["Lavender","#1b1830","#d1baff"],["Forest","#102016","#9ed18a"],["Sand","#282217","#e6d3a1"],["Neon","#0a0a14","#b5ff3d"],["Classic Black","#080808","#f4f4f4"],["Sky","#102333","#8bd6ff"],["Berry","#241023","#f5a4dc"],["Platinum","#1a1d23","#e6e8ed"]];
-function save(){localStorage.setItem(KEY,JSON.stringify(data))}function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}function money(n){return"Rs. "+Number(n).toLocaleString("en-PK")}
-function render(){ $("admin-product-count").textContent=data.products.length;$("admin-request-count").textContent=data.requests.length;$("admin-products").innerHTML=data.products.length?data.products.map(p=>`<div class="admin-item"><div><b>${esc(p.emoji)} ${esc(p.name)}</b><small>${esc(p.category)} · ${money(p.price)}</small></div><button class="delete-btn" data-delete="${p.id}">Remove</button></div>`).join(""):"<p class='muted'>No products.</p>";$("admin-requests").innerHTML=data.requests.length?data.requests.map(r=>`<div class="request-box"><b>${esc(r.name)} — ${esc(r.product)}</b>\nPhone: ${esc(r.phone)} · Qty: ${esc(r.quantity)}\nDeadline: ${esc(r.deadline||"Not specified")}\nDetails: ${esc(r.details)}\nImage names: ${esc((r.imageNames||[]).join(", ")||"None")}</div>`).join(""):"<p class='muted'>No custom requests saved in this browser.</p>";$("theme-select").innerHTML=themes.map((t,i)=>`<option value="${i}">${i+1}. ${t[0]}</option>`).join("");$("theme-select").value=data.theme||0}
-$("product-form").addEventListener("submit",e=>{e.preventDefault();const f=new FormData(e.currentTarget);data.products.push({id:Date.now(),name:f.get("name"),category:f.get("category"),price:Number(f.get("price")),emoji:f.get("emoji")||"✨",description:"Added from demo owner panel."});save();e.currentTarget.reset();render()});
-$("admin-products").addEventListener("click",e=>{const b=e.target.closest("[data-delete]");if(!b)return;data.products=data.products.filter(p=>p.id!==Number(b.dataset.delete));save();render()});
-$("theme-select").addEventListener("change",e=>{data.theme=Number(e.target.value);save();const t=themes[data.theme];document.documentElement.style.setProperty("--bg",t[1]);document.documentElement.style.setProperty("--gold",t[2]);document.documentElement.style.setProperty("--accent",t[2]);toastTheme(t[0])});
-function toastTheme(n){const p=document.createElement("p");p.className="muted";p.textContent="Selected demo theme: "+n+" (this browser only).";$("theme-select").after(p);setTimeout(()=>p.remove(),2200)}
-$("export-requests").addEventListener("click",()=>{const blob=new Blob([JSON.stringify(data.requests,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="royal-store-custom-requests.json";a.click();URL.revokeObjectURL(url)});render();
+const fmt = (value) => `Rs. ${Number(value || 0).toLocaleString('en-PK')}`;
+const $ = (id) => document.getElementById(id);
+
+const state = {
+  store: null,
+  products: [],
+  cart: [],
+  categories: [],
+  theme: null
+};
+
+async function fetchJson(url, options = {}) {
+  const response = await fetch(url, {
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    ...options
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+function updateCartCount() {
+  $('cart-count').textContent = state.cart.length;
+}
+
+function applyTheme(theme) {
+  if (!theme) return;
+  document.documentElement.style.setProperty('--accent', theme.accent || '#f4c95d');
+  document.documentElement.style.setProperty('--secondary', theme.secondary || '#1f2937');
+  document.documentElement.style.setProperty('--surface', theme.surface || '#fff7ed');
+  document.documentElement.style.setProperty('--text', theme.text || '#0f172a');
+}
+
+function renderCategories() {
+  const grid = $('category-grid');
+  if (!grid) return;
+  grid.innerHTML = state.categories.map((category) => `
+    <article class="category-card">
+      <div class="icon">${category.icon || '🛍️'}</div>
+      <h3>${category.name}</h3>
+      <p>${category.description || 'Curated items for your business needs.'}</p>
+    </article>
+  `).join('');
+
+  const filter = $('category-filter');
+  if (!filter) return;
+  filter.innerHTML = ['<option value="All">All categories</option>']
+    .concat(state.categories.map((category) => `<option value="${category.name}">${category.name}</option>`))
+    .join('');
+}
+
+function renderProducts() {
+  const grid = $('product-grid');
+  if (!grid) return;
+
+  const query = ($('search')?.value || '').trim().toLowerCase();
+  const category = $('category-filter')?.value || 'All';
+
+  const filtered = state.products.filter((product) => {
+    const matchesCategory = category === 'All' || product.category === category;
+    const searchText = [product.name, product.description, product.category, ...(product.tags || [])].join(' ').toLowerCase();
+    const matchesSearch = !query || searchText.includes(query);
+    return matchesCategory && matchesSearch;
+  });
+
+  grid.innerHTML = filtered.map((product) => `
+    <article class="product-card">
+      <img src="${product.image || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=900&q=80'}" alt="${product.name}" />
+      <div class="product-body">
+        <span class="product-category">${product.category}</span>
+        <h3>${product.name}</h3>
+        <p>${product.description || 'Product description coming soon.'}</p>
+        <div class="product-row">
+          <strong>${fmt(product.price)}</strong>
+          <button class="btn gold small" data-add="${product.id}">Add to cart</button>
+        </div>
+      </div>
+    </article>
+  `).join('') || '<p class="muted">No products found for the selected filters.</p>';
+}
+
+function showToast(message) {
+  const toast = $('toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+function bindCatalogActions() {
+  $('product-grid')?.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-add]');
+    if (!button) return;
+    const productId = Number(button.dataset.add);
+    const product = state.products.find((entry) => entry.id === productId);
+    if (!product) return;
+    state.cart.push(product);
+    updateCartCount();
+    showToast(`${product.name} added to cart.`);
+  });
+
+  $('cart-button')?.addEventListener('click', () => {
+    if (!state.cart.length) {
+      showToast('Your cart is empty.');
+      return;
+    }
+    const total = state.cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
+    const text = state.cart.map((item) => `${item.name} — ${fmt(item.price)}`).join('\n');
+    alert(`DEMO CART\n\n${text}\n\nTotal: ${fmt(total)}`);
+  });
+
+  $('search')?.addEventListener('input', renderProducts);
+  $('category-filter')?.addEventListener('change', renderProducts);
+}
+
+async function handleCustomRequest(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+  const files = formData.getAll('images');
+  const hasFiles = files.some((file) => file && file.name);
+
+  if (hasFiles && files.length > 20) {
+    showToast('Please select no more than 20 images.');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/requests', {
+      method: 'POST',
+      body: formData
+    });
+
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || 'Unable to submit request.');
+
+    form.reset();
+    showToast('Custom request submitted successfully.');
+  } catch (error) {
+    showToast(error.message || 'Unable to submit request.');
+  }
+}
+
+async function loadStorefront() {
+  try {
+    const payload = await fetchJson('/api/storefront');
+    state.store = payload.settings || {};
+    state.categories = payload.categories || [];
+    state.products = payload.products || [];
+    applyTheme(payload.activeTheme || payload.themes?.find((theme) => Number(theme.active) === 1) || null);
+
+    document.title = `${state.store.storeName || 'Royal Mobile And Printing Store'} — Storefront`;
+    $('store-name') && ($('store-name').textContent = state.store.storeName || 'Royal Mobile And Printing Store');
+    $('store-name-footer') && ($('store-name-footer').textContent = state.store.storeName || 'Royal Mobile And Printing Store');
+    $('store-tagline') && ($('store-tagline').textContent = state.store.storeTagline || 'Print • Create • Customize');
+    $('store-address') && ($('store-address').textContent = `${state.store.address || 'Faisalabad, Punjab, Pakistan'} · ${state.store.phone || '03040011041'}`);
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    renderCategories();
+    renderProducts();
+    bindCatalogActions();
+
+    const requestForm = $('custom-form');
+    if (requestForm) {
+      requestForm.addEventListener('submit', handleCustomRequest);
+    }
+  } catch (error) {
+    console.error(error);
+    showToast('Store data is unavailable right now.');
+  }
+}
+
+window.addEventListener('DOMContentLoaded', loadStorefront);

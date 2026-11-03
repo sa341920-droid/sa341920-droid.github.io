@@ -1,1 +1,138 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Owner Panel — Royal Store</title><link rel="stylesheet" href="assets/css/styles.css"></head><body class="owner-body"><header class="topbar"><a class="brand" href="index.html"><span class="brand-mark">R</span><span>ROYAL STORE<small>OWNER PANEL DEMO</small></span></a><nav><a href="index.html">View shop</a></nav></header><main class="wrap section"><p class="eyebrow">Local demo administration</p><h1>Owner dashboard</h1><p class="muted">This dashboard edits demo data in the current browser only. It is not protected by login and is not a secure live admin system.</p><div class="dashboard-stats"><div class="stat"><b id="admin-product-count">0</b><span>Products</span></div><div class="stat"><b id="admin-request-count">0</b><span>Custom requests</span></div><div class="stat"><b>20</b><span>Theme presets</span></div></div><section class="admin-card"><h2>Add product</h2><form id="product-form" class="form-row"><label>Product name<input name="name" required></label><label>Category<input name="category" required placeholder="Printing"></label><label>Price (PKR)<input name="price" type="number" min="0" required></label><label>Emoji/icon<input name="emoji" value="✨" maxlength="8"></label><button class="btn gold" type="submit">Add product</button></form></section><section class="admin-card"><h2>Theme appearance</h2><label>Choose one of 20 demo themes<select id="theme-select"></select></label><p class="tiny muted">Theme choice is saved in this browser only.</p></section><section class="admin-card"><h2>Product catalog</h2><div id="admin-products"></div></section><section class="admin-card"><h2>Custom requests</h2><div id="admin-requests"></div><button class="btn outline" id="export-requests">Export requests JSON</button></section></main><footer class="wrap">Royal Store · Demo owner panel</footer><script src="assets/js/owner.js"></script></body></html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Royal Mobile And Printing Store — mobile accessories, printing and custom products in Faisalabad." />
+    <title>Royal Mobile And Printing Store</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="wrap nav-wrap">
+        <a class="brand" href="/">
+          <span class="brand-mark">R</span>
+          <span>ROYAL MOBILE<small>AND PRINTING STORE</small></span>
+        </a>
+        <nav class="main-nav">
+          <a href="#categories">Categories</a>
+          <a href="#catalog">Products</a>
+          <a href="#custom">Custom order</a>
+          <a href="/owner.html">Owner panel</a>
+        </nav>
+        <button class="btn gold" id="cart-button">Cart <span id="cart-count">0</span></button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero wrap">
+        <div>
+          <p class="eyebrow" id="store-tagline">Print • Create • Customize</p>
+          <h1>Your idea.<br><span>Our royal touch.</span></h1>
+          <p class="lead">Royal Mobile and Printing Store offers premium mobile accessories, custom gifts, printing, and personalized branding for homes, businesses, and events.</p>
+          <div class="hero-actions">
+            <a href="#catalog" class="btn gold">Shop now</a>
+            <a href="#custom" class="btn secondary">Request custom order</a>
+          </div>
+        </div>
+        <div class="hero-panel card">
+          <p class="eyebrow">Trusted local support</p>
+          <h3 id="store-name">Royal Mobile And Printing Store</h3>
+          <ul>
+            <li>✔ Custom printing and branding</li>
+            <li>✔ Mobile accessories & repair essentials</li>
+            <li>✔ Personalized corporate gifts</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="wrap section" id="categories">
+        <div class="section-heading">
+          <p class="eyebrow">Find your style</p>
+          <h2>Shop categories</h2>
+        </div>
+        <div class="category-grid" id="category-grid"></div>
+      </section>
+
+      <section class="wrap section" id="catalog">
+        <div class="section-heading row-head">
+          <div>
+            <p class="eyebrow">Curated for you</p>
+            <h2>Featured products</h2>
+          </div>
+          <div class="filters">
+            <input id="search" type="search" placeholder="Search products..." />
+            <select id="category-filter">
+              <option value="All">All categories</option>
+            </select>
+          </div>
+        </div>
+        <div class="product-grid" id="product-grid"></div>
+      </section>
+
+      <section class="wrap section custom-section" id="custom">
+        <div class="section-copy">
+          <p class="eyebrow">Custom production</p>
+          <h2>Bring us your idea</h2>
+          <p class="muted">Share the product, size, material, quantity and design notes. We can create customized items for personal gifting, events, and business branding.</p>
+        </div>
+
+        <form id="custom-form" class="form-card">
+          <label>
+            Name
+            <input name="customerName" required />
+          </label>
+          <label>
+            Phone / WhatsApp
+            <input name="phone" type="tel" required placeholder="03xx xxxxxxx" />
+          </label>
+          <label>
+            Product name / category
+            <input name="productName" required placeholder="Custom cap, printed mug, tote bag..." />
+          </label>
+          <label>
+            Product / request details
+            <textarea name="description" rows="4" required placeholder="Describe the item, purpose, quantity, and important details."></textarea>
+          </label>
+          <label>
+            Quantity
+            <input name="quantity" type="number" min="1" value="1" />
+          </label>
+          <label>
+            Budget (optional)
+            <input name="budget" type="text" placeholder="Rs. 15000" />
+          </label>
+          <label>
+            Design instructions
+            <textarea name="designInstructions" rows="3" placeholder="Name, logo, colors, desired design, date, sizing and notes."></textarea>
+          </label>
+          <label class="file-upload-block">
+            Reference images (optional, up to 20)
+            <input id="reference-images" name="images" type="file" multiple accept="image/*" />
+          </label>
+          <button type="submit" class="btn gold wide">Submit custom request</button>
+        </form>
+      </section>
+
+      <section class="wrap section contact-panel">
+        <div>
+          <p class="eyebrow">Visit or message us</p>
+          <h2 id="store-name-footer">Royal Mobile And Printing Store</h2>
+          <p class="muted" id="store-address">Faisalabad, Punjab, Pakistan · 03040011041</p>
+        </div>
+        <div class="contact-actions">
+          <a class="btn gold" href="https://wa.me/923040011041" target="_blank" rel="noreferrer">WhatsApp</a>
+          <a class="btn secondary" href="/owner.html">Owner panel</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="wrap footer-row">
+      <span>© <span id="year"></span> Royal Mobile And Printing Store</span>
+      <span>Online store • <a href="/owner.html">Owner panel</a></span>
+    </footer>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
