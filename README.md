@@ -10,7 +10,7 @@ This source package is **not yet live/production-certified**. You must deploy it
 ## Stack
 Node.js 20+, Express, PostgreSQL 16, pg, bcryptjs, JWT, Zod validation, Helmet, rate limiting, Docker Compose.
 
-## Run locally
+## Deploy on Vercel + Supabase free tiers\nSee `DEPLOY-ON-FREE-PLAN.md` for the deployment walkthrough. The `vercel.json` and `api/index.js` files expose the Express API as a serverless function. Apply `db/schema.sql` in Supabase before deploying.\n\n## Run locally
 1. Install Node.js 20+ and Docker.
 2. Copy `.env.example` to `.env`; set a strong unique JWT_SECRET (minimum 32 chars), database URL and frontend origin.
 3. Start PostgreSQL. For Compose, set `DB_PASSWORD` in `.env`; Compose overrides the app database host to `db` and uses the `royal` database user.

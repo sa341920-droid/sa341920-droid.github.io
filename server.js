@@ -75,4 +75,13 @@ app.patch('/api/admin/support/tickets/:id',auth,allow('ADMIN'),asyncRoute(async(
 app.get('/api/admin/reports/overview',auth,allow('ADMIN'),asyncRoute(async(req,res)=>{const [sales,low,returns,tickets]=await Promise.all([query("SELECT count(*)::int orders,COALESCE(sum(total_pkr),0)::numeric revenue FROM orders WHERE status NOT IN ('CANCELLED')"),query('SELECT id,name,stock FROM products WHERE stock<=5 AND status=\'ACTIVE\' ORDER BY stock LIMIT 100'),query("SELECT count(*)::int count FROM return_cases WHERE status='REQUESTED'"),query("SELECT count(*)::int count FROM support_tickets WHERE status IN ('OPEN','IN_PROGRESS')")]);res.json({orders:sales.rows[0].orders,revenuePkr:sales.rows[0].revenue,lowStock:low.rows,openReturns:returns.rows[0].count,openTickets:tickets.rows[0].count})}));
 
 app.use((err,req,res,next)=>{if(err instanceof z.ZodError)return res.status(400).json({error:'Validation failed',details:err.issues});console.error(err);res.status(err.status||500).json({error:err.status?err.message:'Internal server error'})});
-const port=Number(process.env.PORT||3000);if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32){console.error('JWT_SECRET must be set and at least 32 chars');process.exit(1)}app.listen(port,()=>console.log(`Royal Marketplace API on ${port}`));
+if (require.main === module) {
+  const port = Number(process.env.PORT || 3000);
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+    console.error('JWT_SECRET must be set and at least 32 chars');
+    process.exit(1);
+  }
+  app.listen(port, () => console.log(`Royal Marketplace API on ${port}`));
+}
+
+module.exports = app;
