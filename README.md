@@ -1,4 +1,4 @@
-# Royal Marketplace — Full-stack production-oriented foundation
+# Royal Mobile And Printing Store — Marketplace foundation
 
 Royal Marketplace · Faisalabad, Punjab, Pakistan · Support 03040011041
 
@@ -13,8 +13,8 @@ Node.js 20+, Express, PostgreSQL 16, pg, bcryptjs, JWT, Zod validation, Helmet, 
 ## Run locally
 1. Install Node.js 20+ and Docker.
 2. Copy `.env.example` to `.env`; set a strong unique JWT_SECRET (minimum 32 chars), database URL and frontend origin.
-3. Start PostgreSQL. For Compose, set DB_PASSWORD in environment and update DATABASE_URL to host `db`, user `royal`.
-4. `npm ci`
+3. Start PostgreSQL. For Compose, set the same strong password in `DB_PASSWORD` and in `DATABASE_URL` (host `db`, user `royal`). The Compose app container applies the schema before starting the API.
+4. `npm install`
 5. `npm run db:migrate`
 6. `npm start`
 7. Visit `http://localhost:3000`.
@@ -36,6 +36,13 @@ For Pakistan, merchant access is subject to gateway onboarding. JazzCash documen
 - Seller: `POST /api/seller/apply`; approved seller/admin: `POST /api/products`
 - Authenticated: `POST /api/orders`, `GET /api/orders`, `POST /api/returns`
 - Admin: `GET /api/admin/summary`, `GET /api/admin/orders`, `PATCH /api/admin/orders/:id/status`, `GET /api/admin/sellers`, `PATCH /api/admin/sellers/:id`
+
+## Added feature foundations in this revision
+The existing schema is extended additively (existing tables and data are retained) with product variants, wishlists, owner-managed public storefront settings, order notes, shipping methods, payment records, notification queue, custom-production jobs, audit logs, backup-run records and system events. Orders now have guest-email, tracking, shipping, delivery-estimate and notes fields; products have SKU/barcode and SEO metadata fields. New protected APIs provide wishlist management, public storefront settings, owner settings writes, order tracking by order number plus phone, admin order notes/shipping updates, basic sales reporting and a system-health summary. New order enum values include READY_FOR_DISPATCH and RETURNED.
+
+The existing server file also contained a JavaScript syntax error in the seller-application SQL string and admin summary response; these were corrected so the server parses. Node syntax checks were run on the server and supporting JavaScript files.
+
+These are data/API foundations, **not a claim that all requested workflows are complete**. In particular guest checkout is not yet wired into order creation; customer-facing website pages/account dashboard, full Owner Panel UI, advanced variant checkout/pricing, returns approval/exchange/refund execution, production file processing/export, notification channel providers, secure media upload/scanning, gateway adapters/webhooks, full backup/restore automation, deployment rollback, and end-to-end/device/load/recovery tests still require implementation and deployment-specific configuration.
 
 ## Features needing further implementation before commercial launch
 Full admin/seller user interface, product/category admin CRUD UI, seller commission/payout ledger, email/SMS OTP and password reset, shipping label/courier API, verified gateway callback adapter, refund gateway execution, idempotency strategy, audit logs, image storage/CDN, fraud controls, integration/e2e tests, legal/privacy/return policy and operational support workflows. These are intentionally identified, not represented as already complete.
