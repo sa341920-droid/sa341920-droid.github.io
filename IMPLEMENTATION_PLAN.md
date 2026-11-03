@@ -1,17 +1,19 @@
-# Royal Mobile And Printing Store implementation plan
+# Implementation Plan
 
-## Current repository status
+## Current work completed
+- Repaired repository file mapping and added a coherent Express/SQLite application foundation.
+- Added customer registration, session-based login, server-side owner gate via `OWNER_PASSWORD`, product management, sample catalog, orders/stock checks, shipping fields, payment records, return requests, custom request quoting/status, audits, basic reports and owner health endpoints.
+- Added tests for core API behavior. Tests have not been run in this GitHub editing environment.
 
-The original project is a static GitHub Pages starter. An initial implementation commit introduced full-stack files but several contents landed at incorrect paths. This branch repairs those path errors and provides the first testable server-backed slice.
+## Remaining requirements, in order
+1. Run npm install/tests; fix runtime failures. Configure persistent Node hosting, HTTPS and secrets.
+2. Add secure private uploads with content inspection, size/count limits, malware scanning where available, authenticated retrieval and retention controls.
+3. Build customer-facing login/account/cart/wishlist/tracking pages and owner UI for every API workflow; implement address book and notifications.
+4. Add payment gateway integration with verified server-side webhooks; complete refunds/returns, inventory movement, POS and accounting.
+5. Implement full variant tables and pricing rules, catalog/category management, SEO/sitemap, analytics/export.
+6. Add actual 3D designer and supported tested print exports; no preview is represented as production-ready.
+7. Add email/SMS/WhatsApp provider adapters, social/AI integrations only with credentials/permissions.
+8. Create encrypted off-site scheduled backups and test restore, CI release/deployment rollback, health monitoring.
+9. Run browser/device/accessibility/security/slow-network and end-to-end acceptance tests before production claims.
 
-## Prioritized roadmap
-
-1. **Foundation — implemented in this slice:** Express server, SQLite schema/bootstrap, API health, dynamic catalog/settings/themes, product CRUD, basic request intake, stock-checked order creation, responsive storefront and owner UI, 120 sample products, 20 theme palettes, API tests.
-2. **Security — required before public admin use:** authentication/session management, server-side owner/staff roles, CSRF/rate limiting, security headers, private upload authorization, audit log, validation hardening.
-3. **Commerce workflows:** customer accounts, checkout UX, order lifecycle, payment provider integration and webhook verification, shipping, refunds and returns.
-4. **Operations:** inventory movements/suppliers, POS, expenses/accounting, reports, staff permissions and dashboard.
-5. **Customer custom production:** validated/private uploads up to 20 files, quote workflow, approved requests to orders, design files/3D designer and tested exports.
-6. **Integrations/automation:** secure AI provider proxy, platform-authorized social APIs and scheduler, notifications, promotion workflows, five-item draft generation.
-7. **Reliability/deployment:** persistent host and database, encrypted independent backups and tested restore, migrations, monitoring, HTTPS, CI and release rollback.
-
-No production completion is claimed. GitHub Pages does not run this backend. API credentials, host, authentication policy and actual integrations require configuration and additional work.
+The repository is not complete or production-ready. GitHub Pages cannot serve the Node API; a Node host, persistent data volume, TLS and owner secret are prerequisites.

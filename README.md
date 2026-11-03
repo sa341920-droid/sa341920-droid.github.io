@@ -1,103 +1,19 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Owner Panel — Royal Store</title>
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body>
-    <header class="topbar">
-      <div class="wrap nav-wrap">
-        <a class="brand" href="/"><span class="brand-mark">R</span><span>ROYAL MOBILE<small>AND PRINTING STORE</small></span></a>
-        <nav class="main-nav">
-          <a href="/">Storefront</a>
-          <a href="#products">Catalog</a>
-          <a href="#requests">Custom requests</a>
-          <a href="#settings">Settings</a>
-        </nav>
-      </div>
-    </header>
+# Royal Mobile And Printing Store
 
-    <main class="wrap owner-shell">
-      <section class="owner-summary">
-        <div class="stat-card">
-          <span>Products</span>
-          <strong id="admin-product-count">0</strong>
-        </div>
-        <div class="stat-card">
-          <span>Custom requests</span>
-          <strong id="admin-request-count">0</strong>
-        </div>
-        <div class="stat-card">
-          <span>Active theme</span>
-          <strong id="admin-theme-name">Royal Gold</strong>
-        </div>
-      </section>
+Express + SQLite business application foundation. Local run: `npm install && npm start`, then visit `http://localhost:3000`. Data is stored under `data/` or `DATA_DIR`; use persistent storage in deployment. `OWNER_PASSWORD` must be configured on the server for owner sign-in. Customer accounts use scrypt password hashes. Session cookies are HttpOnly and SameSite=Lax; HTTPS is enabled by production Secure cookie flag.
 
-      <section class="panel-grid" id="settings">
-        <div class="panel card">
-          <h3>Store settings</h3>
-          <form id="settings-form" class="stack-form">
-            <label>Store name<input name="storeName" /></label>
-            <label>Tagline<input name="storeTagline" /></label>
-            <label>Phone<input name="phone" /></label>
-            <label>WhatsApp<input name="whatsapp" /></label>
-            <label>Email<input name="email" type="email" /></label>
-            <label>Address<textarea name="address" rows="2"></textarea></label>
-            <label>Business hours<input name="businessHours" /></label>
-            <label>Currency<input name="currency" /></label>
-            <label>Tax rate<input name="taxRate" type="number" step="0.01" /></label>
-            <button class="btn gold" type="submit">Save settings</button>
-          </form>
-        </div>
+## Implemented in this phase
 
-        <div class="panel card">
-          <h3>Choose storefront theme</h3>
-          <label>Theme<select id="theme-select"></select></label>
-          <p class="muted">20 theme palettes are available; this changes storefront colors.</p>
-        </div>
-      </section>
+- Persistent catalog/settings/themes and 100+ sample products.
+- Product CRUD, owner authentication gate, audit trail, customer registration/login/logout.
+- Guest or signed-in pending orders with stock checks, basic delivery method/address, order tracking endpoint, and payment records. No client can confirm a gateway payment; gateway provider webhooks are not integrated.
+- Customer return request and owner review endpoints, custom request intake and owner status/quote fields, management summary and health endpoints.
+- 20 theme palettes; storefront, basic account flows via API, owner panel.
 
-      <section id="products" class="card panel">
-        <div class="section-heading">
-          <p class="eyebrow">Catalog management</p>
-          <h2>Products</h2>
-        </div>
+## Security and production limitations
 
-        <form id="product-form" class="stack-form product-form">
-          <input type="hidden" name="id" />
-          <label>Name<input name="name" required maxlength="200" /></label>
-          <label>Category<input name="category" required /></label>
-          <label>SKU<input name="sku" /></label>
-          <label>Price<input name="price" type="number" min="0" step="0.01" required /></label>
-          <label>Wholesale price<input name="wholesalePrice" type="number" min="0" step="0.01" /></label>
-          <label>Cost<input name="cost" type="number" min="0" step="0.01" /></label>
-          <label>Stock<input name="stock" type="number" min="0" step="1" required /></label>
-          <label>Image URL<input name="image" type="url" /></label>
-          <label>Tags<input name="tags" placeholder="phone,case,custom" /></label>
-          <label>Description<textarea name="description" rows="3"></textarea></label>
-          <button class="btn gold" type="submit">Add product</button>
-        </form>
+Set `OWNER_PASSWORD` before using owner APIs. Owner routes require an owner session; don't expose a deployment until HTTPS, secret management, backups, rate limits, and security review are complete. Customers can self-register. This version does not yet include secure customer image uploads, exchange inventory workflows, gateway webhooks, email/SMS/WhatsApp notifications, AI/social APIs, a real 3D designer/export pipeline, full POS, supplier/accounting modules, encrypted independent backups or tested restore, or automatic releases. Sample inventory and pending orders are not paid sales. GitHub Pages cannot run this backend.
 
-        <div id="admin-products" class="admin-product-list"></div>
-      </section>
+## Tests
 
-      <section id="requests" class="card panel">
-        <div class="section-heading row-head">
-          <div>
-            <p class="eyebrow">Customer workflow</p>
-            <h2>Custom requests</h2>
-          </div>
-          <button id="export-requests" class="btn secondary" type="button">Export JSON</button>
-        </div>
-        <div id="admin-requests" class="admin-request-list"></div>
-      </section>
-
-      <p class="muted"><strong>Security notice:</strong> Owner API routes currently have no authentication. Do not expose this panel publicly until access controls are implemented.</p>
-    </main>
-
-    <script src="/owner.js"></script>
-  </body>
-</html>
-
+Run `npm test` after `npm install`. The GitHub API integration environment does not provide a runtime, so tests must be run in a Node environment before deployment.

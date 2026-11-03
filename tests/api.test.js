@@ -1,38 +1,10 @@
-# Royal Mobile And Printing Store
-
-A responsive storefront and a working Node.js + Express + SQLite foundation for the Royal Mobile And Printing Store. The app now serves a storefront and owner dashboard from the same persisted database, with seeded categories, 20 theme palettes, sample products, basic requests, and order creation checks.
-
-## Run locally
-
-```sh
-npm install
-npm start
-```
-
-Then open:
-- http://localhost:3000/
-- http://localhost:3000/owner.html
-
-The app creates `data/royal_store.db` automatically on first launch.
-
-## Included features
-
-- Storefront catalog from SQLite
-- Category filters and search
-- Store settings API and theme activation
-- Product CRUD in the Owner Panel
-- Custom request submission endpoint
-- Stock-safe order creation
-- 20 theme choices and 100+ demo products
-- Automated API tests via Node's built-in test runner
-
-## Important limitations
-
-This is not the complete end-to-end business suite from the project specification. The current version does not include authentication, role permissions, secure private file uploads, payment verification, shipping/returns, AI provider integration, or production deployment security. GitHub Pages alone cannot run this server-side code. A Node-capable host with HTTPS and persistent storage is still required for production deployment.
-
-## Test
-
-```sh
-npm test
-```
-
+const {test,before,after}=require('node:test');const assert=require('node:assert/strict');const request=require('supertest');const {app}=require('../server');const {seedDefaults,db}=require('../db');
+let ownerAgent;
+before(async()=>{process.env.OWNER_PASSWORD='test-owner-password';await seedDefaults();ownerAgent=request.agent(app);await ownerAgent.post('/api/auth/owner/login').send({password:process.env.OWNER_PASSWORD}).expect(200);});
+after(()=>new Promise((resolve,reject)=>db.close(e=>e?reject(e):resolve())));
+test('health and public storefront seed data',async()=>{await request(app).get('/api/health').expect(200);const r=await request(app).get('/api/storefront').expect(200);assert.ok(r.body.products.length>=100);assert.equal(r.body.themes.length,20);});
+test('owner-only APIs reject unauthenticated access',async()=>{await request(app).get('/api/owner/settings').expect(401);await request(app).post('/api/products').send({name:'Unauthorized'}).expect(401);});
+test('authenticated product CRUD is persisted',async()=>{const sku=`TEST-${Date.now()}`;const c=await ownerAgent.post('/api/products').send({name:'Test item',category:'Printing',sku,price:250,stock:5}).expect(201);await ownerAgent.put(`/api/products/${c.body.id}`).send({name:'Updated item',price:300,stock:4}).expect(200);const list=await request(app).get('/api/products').expect(200);assert.ok(list.body.some(p=>p.sku===sku&&p.name==='Updated item'));await ownerAgent.delete(`/api/products/${c.body.id}`).expect(200);});
+test('customer registration and guest request intake validate data',async()=>{const agent=request.agent(app);const email=`test${Date.now()}@example.test`;await agent.post('/api/auth/register').send({name:'Test Buyer',email,password:'strong-test-password'}).expect(201);await agent.get('/api/auth/me').expect(200).expect(r=>assert.equal(r.body.role,'customer'));await request(app).post('/api/requests').send({}).expect(400);await request(app).post('/api/requests').send({customerName:'Guest',phone:'03000000000',productName:'Custom mug',description:'Print logo',quantity:1}).expect(201);});
+test('order creation calculates prices server-side and checks stock',async()=>{const products=await request(app).get('/api/products');const p=products.body.find(x=>x.stock>0);const r=await request(app).post('/api/orders').send({items:[{id:p.id,quantity:1}],shippingMethod:'Pickup'}).expect(201);assert.ok(r.body.total>0);await request(app).post('/api/orders').send({items:[{id:p.id,quantity:999999}],shippingMethod:'Pickup'}).expect(400);});
+test('theme changes and owner health are protected',async()=>{await request(app).post('/api/themes/2/activate').expect(401);await ownerAgent.post('/api/themes/2/activate').expect(200);const h=await ownerAgent.get('/api/owner/health').expect(200);assert.equal(h.body.database,'ok');});
