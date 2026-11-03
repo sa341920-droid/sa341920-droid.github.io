@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Royal Marketplace | Shop Everything</title>
+<meta name="description" content="Shop mobiles, printing, sublimation, customized gifts and more at Royal Marketplace.">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="topline">Welcome to Royal Marketplace <span>•</span> Faisalabad, Punjab, Pakistan <span>•</span> Customer support: 03040011041</div>
+<header class="header">
+  <a class="brand" href="#"><span class="brandmark">R</span><span>Royal<span class="gold">Market</span><small>EVERYTHING IN ONE PLACE</small></span></a>
+  <div class="search"><select id="searchCategory"><option value="All">All</option><option>Mobiles</option><option>Printing</option><option>Sublimation</option><option>Customized Gifts</option><option>Grocery</option></select><input id="searchInput" placeholder="Search products, brands and more..." aria-label="Search products"><button id="searchBtn">Search</button></div>
+  <nav class="headlinks"><button id="accountBtn">Account</button><button id="ordersBtn">Orders</button><button id="wishlistBtn">♡ Wishlist</button><button class="cartbtn" id="cartBtn">🛒 Cart <b id="cartCount">0</b></button></nav>
+</header>
+<nav class="nav">
+  <button id="allCategories">☰ All Categories</button><a href="#deals">Today's Deals</a><a href="#products">Best Sellers</a><a href="#services">Printing & Customization</a><a href="#footer">Customer Service</a><button id="adminOpen">Admin</button>
+</nav>
+<section class="hero">
+  <div class="hero-copy"><div class="eyebrow">ROYAL MARKETPLACE</div><h1>Find your next<br><em>favorite thing.</em></h1><p>Shop mobiles, printing supplies, sublimation products, customized gifts and everyday essentials — all in one place.</p><div class="hero-actions"><a class="primary" href="#products">Start Shopping</a><a class="secondary" href="#services">Explore Services</a></div><div class="trust"><span>✓ Secure shopping</span><span>✓ Great value</span><span>✓ Local support</span></div></div>
+  <div class="hero-art"><div class="orb orb1"></div><div class="orb orb2"></div><div class="hero-card"><span class="tag">FEATURED</span><div class="hero-icon">📱</div><h3>Smart choices.<br>Royal service.</h3><p>Discover products made for your everyday.</p><div class="hero-card-foot">ROYAL MARKETPLACE <b>↗</b></div></div></div>
+</section>
+<section class="benefits"><div><b>🚚</b><span><strong>Delivery options</strong><small>Delivery details at checkout</small></span></div><div><b>🔒</b><span><strong>Safe checkout</strong><small>Your details stay protected</small></span></div><div><b>💬</b><span><strong>Local support</strong><small>We’re here to help</small></span></div><div><b>🎁</b><span><strong>Custom creations</strong><small>Personalize select products</small></span></div></section>
+<section class="section" id="categories"><div class="section-head"><div><div class="eyebrow">BROWSE THE STORE</div><h2>Shop by category</h2></div><button class="textbutton" id="viewAll">View all →</button></div><div class="categories" id="categoryGrid"></div></section>
+<section class="dealband" id="deals"><div><span class="eyebrow">A LITTLE SOMETHING SPECIAL</span><h2>Deals worth discovering.</h2><p>Explore featured products and store offers.</p></div><a href="#products" class="primary">Explore deals →</a></section>
+<section class="section" id="products"><div class="section-head"><div><div class="eyebrow">CURATED FOR YOU</div><h2 id="productHeading">Featured products</h2><p class="muted">Discover popular picks across the store.</p></div><div class="filters"><select id="sortSelect"><option value="featured">Featured</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option><option value="name">Name: A–Z</option></select></div></div><div class="product-grid" id="productGrid"></div><div id="emptyState" class="empty hidden">No products found. Try another search.</div></section>
+<section class="section services" id="services"><div class="section-head"><div><div class="eyebrow">MADE YOUR WAY</div><h2>Printing & customization</h2><p class="muted">Bring your ideas to life with our custom services.</p></div></div><div class="service-grid"><article><div class="service-icon">🖨️</div><h3>Printing solutions</h3><p>Printing products and supplies for business, school and personal use.</p><button class="outline" data-category="Printing">Explore printing</button></article><article><div class="service-icon">🎨</div><h3>Sublimation items</h3><p>Customize mugs, shirts, gifts and more with your own design.</p><button class="outline" data-category="Sublimation">Explore sublimation</button></article><article><div class="service-icon">🎁</div><h3>Personalized gifts</h3><p>Make a memorable gift with names, photos and custom artwork.</p><button class="outline" data-category="Customized Gifts">Explore gifts</button></article></div></section>
+<section class="newsletter"><div><div class="eyebrow">THE ROYAL UPDATE</div><h2>Offers, launches & inspiration.</h2><p>Subscribe to receive store news. This demo stores your signup locally.</p></div><form id="newsletterForm"><input type="email" required placeholder="Your email address"><button class="primary">Subscribe</button></form></section>
+<footer id="footer"><div class="footer-main"><div><a class="brand" href="#"><span class="brandmark">R</span><span>Royal<span class="gold">Market</span><small>EVERYTHING IN ONE PLACE</small></span></a><p>Shopping, printing and customization with a royal touch.</p></div><div><h4>Shop</h4><a href="#products">All products</a><a href="#categories">Categories</a><a href="#deals">Deals</a></div><div><h4>Customer care</h4><a href="#" id="footerOrders">Track orders</a><a href="#services">Custom services</a><a href="https://wa.me/923040011041">WhatsApp support</a></div><div><h4>Contact</h4><p>Faisalabad, Punjab, Pakistan</p><p>03040011041</p></div></div><div class="footer-bottom">© <span id="year"></span> Royal Marketplace. All rights reserved. <span>Demo marketplace — configure backend and payment provider before live transactions.</span></div></footer>
+<div class="toast" id="toast"></div>
+<div class="overlay hidden" id="overlay"><aside class="drawer" id="drawer"><div class="drawer-head"><h2 id="drawerTitle">Your Cart</h2><button id="closeDrawer" aria-label="Close">×</button></div><div id="drawerBody"></div></aside></div>
+<div class="modal hidden" id="modal"><div class="modal-card"><button class="modal-close" id="modalClose">×</button><div id="modalContent"></div></div></div>
+<script src="assets/js/app.js"></script>
+</body></html>
