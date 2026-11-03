@@ -1,54 +1,62 @@
--- PostgreSQL schema starter for Royal Marketplace
-CREATE TABLE IF NOT EXISTS users (
- id BIGSERIAL PRIMARY KEY, full_name TEXT NOT NULL, email TEXT UNIQUE NOT NULL,
- password_hash TEXT NOT NULL, phone TEXT, role TEXT NOT NULL DEFAULT 'customer'
- CHECK (role IN ('customer','staff','admin')), created_at TIMESTAMPTZ DEFAULT now()
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE TYPE user_role AS ENUM ('CUSTOMER','SELLER','ADMIN');
+CREATE TYPE order_status AS ENUM ('PENDING_PAYMENT','PLACED','CONFIRMED','PROCESSING','SHIPPED','DELIVERED','CANCELLED','RETURN_REQUESTED','REFUNDED');
+CREATE TYPE payment_method AS ENUM ('COD','ONLINE');
+CREATE TYPE payment_status AS ENUM ('PENDING','PAID','FAILED','REFUNDED');
+CREATE TABLE users (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(), name VARCHAR(120) NOT NULL,
+ email VARCHAR(255) NOT NULL UNIQUE, phone VARCHAR(24), password_hash TEXT NOT NULL,
+ role user_role NOT NULL DEFAULT 'CUSTOMER', is_active BOOLEAN NOT NULL DEFAULT TRUE,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE TABLE IF NOT EXISTS categories (
- id BIGSERIAL PRIMARY KEY, name TEXT UNIQUE NOT NULL, slug TEXT UNIQUE NOT NULL
+CREATE TABLE addresses (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(), user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ recipient VARCHAR(120) NOT NULL, phone VARCHAR(24) NOT NULL, address_line TEXT NOT NULL,
+ city VARCHAR(100) NOT NULL, province VARCHAR(100) NOT NULL, postal_code VARCHAR(20),
+ is_default BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE TABLE IF NOT EXISTS products (
- id BIGSERIAL PRIMARY KEY, category_id BIGINT REFERENCES categories(id),
- name TEXT NOT NULL, slug TEXT UNIQUE, description TEXT, price NUMERIC(12,2) NOT NULL CHECK(price>=0),
- compare_at_price NUMERIC(12,2), sku TEXT UNIQUE, stock INTEGER NOT NULL DEFAULT 0 CHECK(stock>=0),
- status TEXT NOT NULL DEFAULT 'active', created_at TIMESTAMPTZ DEFAULT now()
+CREATE TABLE categories (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(), name VARCHAR(120) NOT NULL UNIQUE,
+ slug VARCHAR(140) NOT NULL UNIQUE, description TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE TABLE IF NOT EXISTS product_images (
- id BIGSERIAL PRIMARY KEY, product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
- image_url TEXT NOT NULL, alt_text TEXT, sort_order INTEGER DEFAULT 0
+CREATE TABLE products (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(), seller_id UUID REFERENCES users(id) ON DELETE SET NULL,
+ category_id UUID REFERENCES categories(id) ON DELETE SET NULL, name VARCHAR(220) NOT NULL,
+ slug VARCHAR(240) NOT NULL UNIQUE, description TEXT NOT NULL DEFAULT '', price_pkr NUMERIC(12,2) NOT NULL CHECK(price_pkr>=0),
+ compare_price_pkr NUMERIC(12,2) CHECK(compare_price_pkr>=0), stock INTEGER NOT NULL DEFAULT 0 CHECK(stock>=0),
+ image_url TEXT, status VARCHAR(20) NOT NULL DEFAULT 'DRAFT' CHECK(status IN ('DRAFT','ACTIVE','ARCHIVED')),
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE TABLE IF NOT EXISTS addresses (
- id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
- recipient TEXT NOT NULL, phone TEXT NOT NULL, address_line TEXT NOT NULL, city TEXT NOT NULL,
- province TEXT, postal_code TEXT, is_default BOOLEAN DEFAULT false
+CREATE INDEX products_category_status_idx ON products(category_id,status);
+CREATE INDEX products_search_idx ON products USING GIN(to_tsvector('english', name || ' ' || description));
+CREATE TABLE orders (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(), order_number VARCHAR(32) NOT NULL UNIQUE,
+ user_id UUID NOT NULL REFERENCES users(id), status order_status NOT NULL DEFAULT 'PENDING_PAYMENT',
+ payment_method payment_method NOT NULL, payment_status payment_status NOT NULL DEFAULT 'PENDING',
+ subtotal_pkr NUMERIC(12,2) NOT NULL, shipping_pkr NUMERIC(12,2) NOT NULL DEFAULT 0,
+ total_pkr NUMERIC(12,2) NOT NULL, recipient VARCHAR(120) NOT NULL, phone VARCHAR(24) NOT NULL,
+ address_line TEXT NOT NULL, city VARCHAR(100) NOT NULL, province VARCHAR(100) NOT NULL,
+ payment_reference TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE TABLE IF NOT EXISTS orders (
- id BIGSERIAL PRIMARY KEY, order_number TEXT UNIQUE NOT NULL, user_id BIGINT REFERENCES users(id),
- customer_name TEXT NOT NULL, customer_email TEXT, customer_phone TEXT NOT NULL,
- shipping_address JSONB NOT NULL, subtotal NUMERIC(12,2) NOT NULL, delivery_fee NUMERIC(12,2) DEFAULT 0,
- discount NUMERIC(12,2) DEFAULT 0, total NUMERIC(12,2) NOT NULL,
- payment_method TEXT NOT NULL, payment_status TEXT DEFAULT 'pending',
- fulfillment_status TEXT DEFAULT 'received', created_at TIMESTAMPTZ DEFAULT now()
+CREATE INDEX orders_user_created_idx ON orders(user_id,created_at DESC);
+CREATE TABLE order_items (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(), order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+ product_id UUID REFERENCES products(id) ON DELETE SET NULL, product_name VARCHAR(220) NOT NULL,
+ quantity INTEGER NOT NULL CHECK(quantity>0), unit_price_pkr NUMERIC(12,2) NOT NULL CHECK(unit_price_pkr>=0),
+ line_total_pkr NUMERIC(12,2) NOT NULL
 );
-CREATE TABLE IF NOT EXISTS order_items (
- id BIGSERIAL PRIMARY KEY, order_id BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
- product_id BIGINT REFERENCES products(id), product_name TEXT NOT NULL,
- unit_price NUMERIC(12,2) NOT NULL, quantity INTEGER NOT NULL CHECK(quantity>0)
+CREATE TABLE payment_events (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(), provider VARCHAR(80) NOT NULL,
+ provider_event_id VARCHAR(200) NOT NULL UNIQUE, order_id UUID NOT NULL REFERENCES orders(id),
+ event_type VARCHAR(120) NOT NULL, verified BOOLEAN NOT NULL DEFAULT FALSE,
+ payload JSONB NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE TABLE IF NOT EXISTS reviews (
- id BIGSERIAL PRIMARY KEY, product_id BIGINT REFERENCES products(id) ON DELETE CASCADE,
- user_id BIGINT REFERENCES users(id), rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
- review_text TEXT, status TEXT DEFAULT 'pending', created_at TIMESTAMPTZ DEFAULT now()
+CREATE TABLE return_requests (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(), order_id UUID NOT NULL REFERENCES orders(id),
+ user_id UUID NOT NULL REFERENCES users(id), reason TEXT NOT NULL, status VARCHAR(30) NOT NULL DEFAULT 'REQUESTED',
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE TABLE IF NOT EXISTS coupons (
- id BIGSERIAL PRIMARY KEY, code TEXT UNIQUE NOT NULL, discount_type TEXT NOT NULL,
- discount_value NUMERIC(12,2) NOT NULL, starts_at TIMESTAMPTZ, expires_at TIMESTAMPTZ,
- usage_limit INTEGER, active BOOLEAN DEFAULT true
-);
-CREATE TABLE IF NOT EXISTS inventory_movements (
- id BIGSERIAL PRIMARY KEY, product_id BIGINT REFERENCES products(id), quantity_delta INTEGER NOT NULL,
- reason TEXT NOT NULL, reference TEXT, created_at TIMESTAMPTZ DEFAULT now()
-);
-CREATE TABLE IF NOT EXISTS store_settings (
- key TEXT PRIMARY KEY, value JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT now()
+CREATE TABLE seller_profiles (
+ user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, store_name VARCHAR(180) NOT NULL,
+ status VARCHAR(30) NOT NULL DEFAULT 'PENDING', address TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
