@@ -1,106 +1,16 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Owner Panel — Royal Store</title>
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body class="owner-page">
-    <header class="topbar owner-topbar">
-      <div class="wrap nav-wrap">
-        <a class="brand" href="/">
-          <span class="brand-mark">R</span>
-          <span>ROYAL MOBILE<small>AND PRINTING STORE</small></span>
-        </a>
-        <nav class="main-nav">
-          <a href="/">Storefront</a>
-          <a href="#products">Catalog</a>
-          <a href="#requests">Custom requests</a>
-          <a href="#settings">Settings</a>
-        </nav>
-      </div>
-    </header>
-
-    <main class="wrap owner-shell">
-      <section class="owner-summary">
-        <div class="stat-card">
-          <span>Products</span>
-          <strong id="admin-product-count">0</strong>
-        </div>
-        <div class="stat-card">
-          <span>Custom requests</span>
-          <strong id="admin-request-count">0</strong>
-        </div>
-        <div class="stat-card">
-          <span>Active theme</span>
-          <strong id="admin-theme-name">Royal Gold</strong>
-        </div>
-      </section>
-
-      <section class="panel-grid">
-        <div class="panel card">
-          <h3>Store settings</h3>
-          <form id="settings-form" class="stack-form">
-            <label>Store name <input name="storeName" /></label>
-            <label>Tagline <input name="storeTagline" /></label>
-            <label>Phone <input name="phone" /></label>
-            <label>WhatsApp <input name="whatsapp" /></label>
-            <label>Email <input name="email" type="email" /></label>
-            <label>Address <textarea name="address" rows="3"></textarea></label>
-            <label>Business hours <input name="businessHours" /></label>
-            <label>Currency <input name="currency" /></label>
-            <label>Tax rate <input name="taxRate" step="0.01" type="number" /></label>
-            <button class="btn gold" type="submit">Save settings</button>
-          </form>
-        </div>
-
-        <div class="panel card">
-          <h3>Theme control</h3>
-          <label>
-            Select theme
-            <select id="theme-select"></select>
-          </label>
-          <div id="theme-preview" class="theme-preview"></div>
-        </div>
-      </section>
-
-      <section id="products" class="card panel">
-        <div class="section-heading row-head">
-          <div>
-            <p class="eyebrow">Catalog</p>
-            <h2>Manage products</h2>
-          </div>
-        </div>
-        <form id="product-form" class="stack-form product-form">
-          <input type="hidden" name="id" />
-          <label>Name <input name="name" required /></label>
-          <label>Category <input name="category" required /></label>
-          <label>SKU <input name="sku" /></label>
-          <label>Price <input name="price" type="number" min="0" step="0.01" required /></label>
-          <label>Wholesale Price <input name="wholesalePrice" type="number" min="0" step="0.01" /></label>
-          <label>Cost <input name="cost" type="number" min="0" step="0.01" /></label>
-          <label>Stock <input name="stock" type="number" min="0" step="1" required /></label>
-          <label>Image URL <input name="image" type="url" /></label>
-          <label>Tags <input name="tags" placeholder="phone,case,custom" /></label>
-          <label>Description <textarea name="description" rows="3"></textarea></label>
-          <button class="btn gold" type="submit">Add product</button>
-        </form>
-        <div id="admin-products" class="admin-product-list"></div>
-      </section>
-
-      <section id="requests" class="card panel">
-        <div class="section-heading row-head">
-          <div>
-            <p class="eyebrow">Customer workflow</p>
-            <h2>Custom requests</h2>
-          </div>
-          <button id="export-requests" class="btn secondary" type="button">Export JSON</button>
-        </div>
-        <div id="admin-requests" class="admin-request-list"></div>
-      </section>
-    </main>
-
-    <script src="/owner.js"></script>
-  </body>
-</html>
+const fmt=value=>`Rs. ${Number(value||0).toLocaleString('en-PK')}`;
+const $=id=>document.getElementById(id);
+const state={products:[],cart:[],categories:[],settings:{}};
+async function api(url,options={}){const response=await fetch(url,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options});const body=await response.json().catch(()=>({}));if(!response.ok)throw Error(body.error||'Request failed.');return body;}
+function safe(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function toast(message){const el=$('toast');if(!el)return;el.textContent=message;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2500);}
+function applyTheme(theme){if(!theme)return;document.documentElement.style.setProperty('--gold',theme.accent);document.documentElement.style.setProperty('--accent',theme.accent);document.documentElement.style.setProperty('--panel',theme.surface);document.documentElement.style.setProperty('--text',theme.text);}
+function renderCategories(){const grid=$('category-grid'),filter=$('category-filter');if(grid)grid.innerHTML=state.categories.map(c=>`<a class="category-card" href="#catalog"><div class="icon">${safe(c.icon||'🛍️')}</div><h3>${safe(c.name)}</h3><p>${safe(c.description||'')}</p></a>`).join('');if(filter)filter.innerHTML='<option value="All">All categories</option>'+state.categories.map(c=>`<option value="${safe(c.name)}">${safe(c.name)}</option>`).join('');}
+function renderProducts(){const grid=$('product-grid');if(!grid)return;const q=($('search')?.value||'').toLowerCase(),cat=$('category-filter')?.value||'All';const products=state.products.filter(p=>p.visible&&(cat==='All'||p.category===cat)&&`${p.name} ${p.description} ${p.category} ${(p.tags||[]).join(' ')}`.toLowerCase().includes(q));grid.innerHTML=products.map(p=>`<article class="product-card"><img src="${safe(p.image||'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80')}" alt="${safe(p.name)}" loading="lazy"><div class="product-body"><span class="product-category">${safe(p.category)}</span><h3>${safe(p.name)}</h3><p>${safe(p.description||'')}</p><div class="product-row"><strong>${fmt(p.price)}</strong><button class="btn gold small" data-add="${p.id}" ${p.stock<1?'disabled':''}>${p.stock<1?'Out of stock':'Add to cart'}</button></div></div></article>`).join('')||'<p class="muted">No matching products found.</p>';}
+function updateCart(){const count=$('cart-count');if(count)count.textContent=state.cart.reduce((n,item)=>n+item.quantity,0);}
+async function checkout(){if(!state.cart.length)return toast('Your cart is empty.');const name=prompt('Name for this order (optional):')||'Guest';const phone=prompt('Phone number (optional):')||'';try{const order=await api('/api/orders',{method:'POST',body:JSON.stringify({customerName:name,phone,items:state.cart.map(x=>({id:x.id,quantity:x.quantity}))})});state.cart=[];updateCart();await load();toast(`Order ${order.id} submitted. Payment is not collected online.`);}catch(error){toast(error.message);}}
+async function load(){try{const data=await api('/api/storefront');state.settings=data.settings||{};state.categories=data.categories||[];state.products=data.products||[];applyTheme(data.themes?.find(t=>Number(t.active)===1));document.title=state.settings.storeName||'Royal Mobile And Printing Store';for(const id of ['store-name','store-name-footer'])if($(id))$(id).textContent=state.settings.storeName||'Royal Mobile And Printing Store';if($('store-tagline'))$('store-tagline').textContent=state.settings.storeTagline||'Print • Create • Customize';if($('store-address'))$('store-address').textContent=`${state.settings.address||''} · ${state.settings.phone||''}`;renderCategories();renderProducts();}catch(e){toast(`Store API unavailable: ${e.message}`);}}
+$('product-grid')?.addEventListener('click',event=>{const b=event.target.closest('[data-add]');if(!b)return;const p=state.products.find(x=>x.id===Number(b.dataset.add));if(!p)return;const existing=state.cart.find(x=>x.id===p.id);if(existing)existing.quantity++;else state.cart.push({id:p.id,name:p.name,price:p.price,quantity:1});updateCart();toast(`${p.name} added to cart.`);});
+$('cart-button')?.addEventListener('click',checkout);$('search')?.addEventListener('input',renderProducts);$('category-filter')?.addEventListener('change',renderProducts);
+$('custom-form')?.addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget;const data=Object.fromEntries(new FormData(form));try{await api('/api/requests',{method:'POST',body:JSON.stringify(data)});form.reset();toast('Custom request submitted. The store will contact you.');}catch(error){toast(error.message);}});
+window.addEventListener('DOMContentLoaded',()=>{if($('year'))$('year').textContent=new Date().getFullYear();load();});
