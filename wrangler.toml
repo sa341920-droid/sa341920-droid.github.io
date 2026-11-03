@@ -1,6 +1,0 @@
-name = "royal-mobile-printing-store-api"
-main = "worker.js"
-compatibility_date = "2026-10-31"
-
-# Bind Workers AI in Cloudflare dashboard using variable name: AI
-# Add API keys as Worker Secrets. Never commit secrets to this file.
