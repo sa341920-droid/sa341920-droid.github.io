@@ -1,1 +1,0 @@
-# /api/* is handled by the Cloudflare Pages Function in ../functions/api/[[path]].js
