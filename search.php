@@ -1,0 +1,1 @@
+<?php require dirname(__DIR__).'/config/bootstrap.php';$q=trim($_GET['q']??'');if(strlen($q)<2)json_response(['items'=>[]]);$items=Store::products($q,0,10);json_response(['items'=>array_map(fn($p)=>['id'=>$p['id'],'name'=>$p['name'],'price'=>$p['sale_price']?:$p['price'],'url'=>'/product.php?id='.$p['id']],$items)]);
