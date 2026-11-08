@@ -1,6 +1,0 @@
-<?php
-require __DIR__.'/config/bootstrap.php';
-if($_SERVER['REQUEST_METHOD']==='POST'){Security::verify();try{Store::addCart((int)$_POST['product_id'],(int)($_POST['qty']??1));}catch(Throwable $e){$err=$e->getMessage();}}
-$cart=Store::cart();$items=[];$total=0;
-if($cart){$ids=array_keys($cart);$q=db()->prepare('SELECT id,name,sku,price,stock FROM products WHERE id IN ('.implode(',',array_fill(0,count($ids),'?')).')');$q->execute($ids);foreach($q as $p){$p['qty']=$cart[$p['id']];$p['line']=$p['price']*$p['qty'];$total+=$p['line'];$items[]=$p;}}
-?><!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Your cart</title><link rel="stylesheet" href="/assets/css/store.css"></head><body><main class="panel"><a href="/">← Continue shopping</a><h1>Shopping cart</h1><?php if(!empty($err)):?><p class="error"><?=e($err)?></p><?php endif;?><?php foreach($items as $p):?><div class="line"><div><b><?=e($p['name'])?></b><small><?=e($p['sku'])?> · Qty <?=$p['qty']?></small></div><strong><?=money($p['line'])?></strong></div><?php endforeach;?><h2>Total: <?=money($total)?></h2><?php if($items):?><a class="btn" href="/checkout.php">Proceed to checkout</a><?php else:?><p>Your cart is empty.</p><?php endif;?></main></body></html>
