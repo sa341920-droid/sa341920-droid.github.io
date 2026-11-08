@@ -1,1 +1,0 @@
-document.addEventListener('submit',e=>{const b=e.target.querySelector('button[type=submit],button:not([type])');if(b){b.dataset.old=b.textContent;b.textContent='Please wait…';b.disabled=true;}});
