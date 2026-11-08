@@ -1,1 +1,0 @@
-<?php require dirname(__DIR__).'/config/bootstrap.php';try{db()->query('SELECT 1');json_response(['ok'=>true,'database'=>'connected']);}catch(Throwable $e){json_response(['ok'=>false],503);}
